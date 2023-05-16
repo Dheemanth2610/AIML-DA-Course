@@ -1,0 +1,150 @@
+import pandas as pd
+
+import os
+
+from sklearn import ensemble
+
+from sklearn.impute import SimpleImputer#used for imputation(handling missing data)
+
+from sklearn import model_selection#when multiple models are there, to check the feature importance
+
+os.chdir(r"C:\Users\dheem\Documents\College\internship course and codes")
+
+Train=pd.read_csv(r"C:\Users\dheem\Downloads\train.csv")
+
+Train.shape
+
+Train.info()
+
+Test=pd.read_csv(r"C:\Users\dheem\Downloads\test (1).csv")
+
+Test.shape
+
+Test.info()
+
+Test.Survived= None
+
+Titanic=pd.concat([Train,Test])#used to combine two or more datasets.
+
+Titanic.shape
+
+Titanic.info()
+Titanic.head()
+
+def title(name):
+  return name.split(',')[1].split('.')[0].strip()#it will extract the characters after , and before . in the title column
+
+Titanic['Title']=Titanic['Name'].map(title)# we are creating a column named title in which the title from the name column is extracted and placed in this column
+#map function is used as an alternative to for loop to make the work easier.
+
+#Alternate Code-
+#for i=1 to 891
+#Titanic['Name']= name.split(',')[1].split('.')[0].strip()
+
+mean=SimpleImputer()#by default parameter is mean.
+
+mean.fit(Train[['Age','Fare']])
+
+Titanic[['Age',"Fare"]]=mean.transform(Titanic[['Age','Fare']])
+
+def conv(age):
+  if(age >=0 and age <=1):
+    return 'Infant'
+  elif(age>1 and age<=12):
+    return 'Child'
+  elif(age>=13 and age<18):
+    return 'Teenager'
+  elif(age>=18 and age<30):
+    return 'Young Adults'
+  elif(age>=30 and age<40):
+    return 'Middle Adults'
+  elif(age>=40 and age<50):
+    return 'Late Adults'
+  elif(age>=50 and age<60):
+    return 'Pre Old Age'
+  else:
+    return 'Old'
+
+
+Titanic['Age_grp']=Titanic['Age'].map(conv)
+
+#Alternate Code-
+#For i=1 to 1389
+ #TItanic['Age_grp']= conv['Age']
+ #i+=1
+
+Titanic['Famsize']= Titanic['SibSp'] + Titanic['Parch'] +1
+
+def conv_fam(size):
+  if(size==1):
+    return 'Single'
+  elif(size>2 and size <=4):
+    return 'Small'
+  elif(size>4 and size <=6):
+    return 'Medium'
+  else:
+    return 'Large'
+
+Titanic['Fam_cat']=Titanic['Famsize'].map(conv_fam)
+
+def conv_fares(price):
+  if(price>=0 and price<25):
+    return 'Standard'
+  elif(price>=25 and price<50):
+    return 'Premium'
+  elif(price>=50 and price<100):
+    return 'Ultra'
+  elif(price>=100 and price<200):
+    return 'Max'
+  else:
+    return 'OP'
+
+Titanic['Fare_cat']=Titanic['Fare'].map(conv_fares)
+
+titanic=pd.get_dummies(Titanic,columns=['Sex','Pclass','Embarked','Age_grp','Fam_cat','Fare_cat','Title'])
+
+titanic.shape
+
+titanic.info()
+
+titanic.head()
+
+training = titanic.drop(['PassengerId' , 'Name' , 'Age' , 'Ticket' , 'Cabin' , 'SibSp' , 'Parch','Survived'],axis=1,inplace=False)
+
+training.shape
+
+training.info()
+
+x_train=training[0:891]
+
+x_train.shape
+
+y_train=Train['Survived']
+
+x_test=training[Train.shape[0]:]
+
+x_test.shape
+
+rf=ensemble.RandomForestClassifier(n_estimators=50)
+#n_estimator is for number of trees to be grown
+#max_depth is for max depth each tree to grow
+#max_features is for max columns/features to be used for tree
+rf_grid={'max_features':[5,6,7],'max_depth':[8,9,10]}
+
+rf_est=model_selection.GridSearchCV(rf,rf_grid,cv=9)
+
+rf_est.fit(x_train,y_train)
+
+rf_est.cv_results_
+
+rf_est.best_score_
+
+rf_est.best_params_
+
+x_test=training[Train.shape[0]:]
+
+Test['Survived']=rf_est.predict(x_test)
+
+Test.to_csv('Attempt6.csv',columns=['PassengerId','Survived'],index=False)
+
+os.getcwd()
